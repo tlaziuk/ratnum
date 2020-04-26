@@ -1,0 +1,28 @@
+{
+  "name": "rational-number",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "build": "tsc --project tsconfig.json",
+    "test": "jest"
+  },
+  "author": "",
+  "license": "ISC",
+  "jest": {
+    "preset": "ts-jest/presets/js-with-ts",
+    "testEnvironment": "node"
+  },
+  "devDependencies": {
+    "@types/jest": "^25.0.0",
+    "@typescript-eslint/eslint-plugin": "^2.0.0",
+    "@typescript-eslint/parser": "^2.0.0",
+    "eslint": "^6.0.0",
+    "jest": "^25.0.0",
+    "ts-jest": "^25.0.0",
+    "typescript": "~3.8.0"
+  },
+  "dependencies": {
+    "tslib": "^1.11.0"
+  }
+}
