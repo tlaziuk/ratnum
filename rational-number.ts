@@ -85,7 +85,7 @@ function parseValue(value: ParsableValue): RationalNumberLike<bigint> {
   })
 }
 
-function stringify(value: RationalNumberLike<bigint>, precision = 16): string {
+function stringify(value: RationalNumberLike<bigint>, precision: number): string {
   value = normalizeValue(value)
   let numerator = value.numerator
   const denominator = value.denominator
@@ -157,14 +157,19 @@ export default class RationalNumber implements RationalNumberLike<bigint> {
   }
 
   public valueOf(): number {
-    return Number(stringify(this))
+    return Number(stringify(this, 16))
   }
-  public toString(precision?: number): string {
+
+  public toString(): string {
+    return stringify(this, 16)
+  }
+
+  public toFixed(precision: number): string {
     return stringify(this, precision)
   }
 
   public toJSON(): number {
-    return Number(stringify(this))
+    return Number(stringify(this, 16))
   }
 
   public add(value: ParsableValue): RationalNumber {
