@@ -1,6 +1,6 @@
 {
   "name": "ratnum",
-  "version": "1.0.2",
+  "version": "1.0.3",
   "description": "",
   "main": "cjs/index.js",
   "module": "es/index.js",
