@@ -1,11 +1,12 @@
 {
   "name": "ratnum",
-  "version": "1.0.1",
+  "version": "1.0.2",
   "description": "",
   "main": "cjs/index.js",
   "module": "es/index.js",
   "scripts": {
     "build": "tsc --project tsconfig.es.json && tsc --project tsconfig.cjs.json",
+    "prepublishOnly": "tsc --project tsconfig.es.json && tsc --project tsconfig.cjs.json",
     "test": "jest"
   },
   "author": "",
