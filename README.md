@@ -11,9 +11,10 @@ if you need to perform a precise calculation just use this library, and it looks
 ``` TypeScript
 import RationalNumber from 'ratnum'
 
-console.log(Number(RationalNumber(0.1).add(0.2)))
+console.log(Number(new RationalNumber(0.1).add(0.2)))
 /// 0.3
 ```
+*view the test files for more usage examples*
 
 unfortunately JavaScript has poor support of operator overloading so you'll be forced to use those ugly methods like `.add`, `.substract`, etc., but simple overloads like `.toString` (`String(...)`), `valueOf` (`Number(...)`) and `toJSON` (`JSON.stringify(...)`) are supported
 
