@@ -19,3 +19,7 @@ src/graphql/types.ts
 *.js
 *.map
 *.d.ts
+yarn.lock
+es/
+cjs/
+*.tgz

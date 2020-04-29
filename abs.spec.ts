@@ -2,9 +2,9 @@ import abs from './abs'
 
 describe(abs, () => {
   it.each<[bigint, bigint]>([
-    [1n, 1n],
-    [-1n, 1n],
-    [0n, 0n],
+    [BigInt(1), BigInt(1)],
+    [BigInt(-1), BigInt(1)],
+    [BigInt(0), BigInt(0)],
   ])('expect abs(%p) to be %p', (value, result) => {
     expect(abs(value)).toEqual(result)
   })

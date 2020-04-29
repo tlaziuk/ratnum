@@ -15,15 +15,15 @@ describe(RationalNumber, () => {
     [[-1, 5], -0.2],
     [[1, 5], 0.2],
     [[1, 2], 0.5],
-    [{ nominator: 1, denominator: 1 }, 1],
-    [{ nominator: -1, denominator: 1 }, -1],
-    [{ nominator: -1, denominator: -1 }, 1],
-    [{ nominator: 1, denominator: -1 }, -1],
-    [{ nominator: 1, denominator: -2 }, -0.5],
-    [{ nominator: 3, denominator: -2 }, -1.5],
-    [{ nominator: -3, denominator: 2 }, -1.5],
-    [{ nominator: 3, denominator: 2 }, 1.5],
-    [{ nominator: 1, denominator: 2 }, 0.5],
+    [{ numerator: 1, denominator: 1 }, 1],
+    [{ numerator: -1, denominator: 1 }, -1],
+    [{ numerator: -1, denominator: -1 }, 1],
+    [{ numerator: 1, denominator: -1 }, -1],
+    [{ numerator: 1, denominator: -2 }, -0.5],
+    [{ numerator: 3, denominator: -2 }, -1.5],
+    [{ numerator: -3, denominator: 2 }, -1.5],
+    [{ numerator: 3, denominator: 2 }, 1.5],
+    [{ numerator: 1, denominator: 2 }, 0.5],
     [1.11, 1.11],
     [-1.11, -1.11],
     ['2', 2],
@@ -86,5 +86,21 @@ describe(RationalNumber, () => {
     [3, 10, 0.3],
   ])('expect RationalNumber(%p) / %p to be %p', (value, toMultiply, result) => {
     expect(Number(new RationalNumber(value).divide(toMultiply))).toEqual(result)
+  })
+
+  it.each<[any, any, number]>([
+    [1, 1, 0],
+    [2, 1, 0],
+    [1, 2, 1],
+    [3, -1.2, 0.6],
+  ])('expect RationalNumber(%p) mod %p to be %p', (value, modulator, result) => {
+    expect(Number(new RationalNumber(value).mod(modulator))).toEqual(result)
+  })
+
+  it.each<[any, number]>([
+    [1, 1],
+    [Math.PI, 3],
+  ])('expect int(RationalNumber(%p)) to be %p', (value, result) => {
+    expect(Number(new RationalNumber(value).int())).toEqual(result)
   })
 })

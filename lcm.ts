@@ -2,8 +2,8 @@ import abs from './abs';
 import gcd from './gcd';
 
 export function lcm(x: bigint, y: bigint): bigint {
-  if (x === 0n || y === 0n) {
-    return 0n
+  if (x === BigInt(0) || y === BigInt(0)) {
+    return BigInt(0)
   }
 
   if (x === y) {

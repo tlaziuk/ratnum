@@ -2,9 +2,9 @@ import lcm from './lcm'
 
 describe(lcm, () => {
   it.each<[bigint, bigint, bigint]>([
-    [1n, 1n, 1n],
-    [2n, 4n, 4n],
-    [6n, 4n, 12n],
+    [BigInt(1), BigInt(1), BigInt(1)],
+    [BigInt(2), BigInt(4), BigInt(4)],
+    [BigInt(6), BigInt(4), BigInt(12)],
   ])('expect lcm(%p, %p) to be %p', (x, y, result) => {
     expect(lcm(x, y)).toEqual(result)
   })

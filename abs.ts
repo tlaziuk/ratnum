@@ -1,6 +1,6 @@
 export function abs(value: bigint): bigint {
-  if (value < 0n) {
-    return value * -1n
+  if (value < BigInt(0)) {
+    return value * BigInt(-1)
   }
 
   return value

@@ -16,6 +16,7 @@
     "declaration": true,
     "declarationMap": true,
     "sourceMap": true,
+    "incremental": true,
     "inlineSourceMap": false,
     "inlineSources": true,
     "experimentalDecorators": true,
@@ -26,6 +27,9 @@
     "jsx": "react"
   },
   "exclude": [
+    "*.spec.*",
+    "es/",
+    "cjs/",
     "node_modules/",
     ".cache/",
     ".config/",

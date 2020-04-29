@@ -4,13 +4,8 @@ export function gcd(x: bigint, y: bigint): bigint {
   x = abs(x)
   y = abs(y)
 
-  while(y) {
-
-    const t = y;
-
-    y = x % y;
-
-    x = t;
+  while (y) {
+    ([y, x] = [x % y, y])
   }
 
   return x;
