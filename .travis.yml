@@ -10,4 +10,4 @@ deploy:
   api_key: $NPM_API_KEY
   on:
     tags: true
-    repo: tlaziuk/rational-number
+    repo: tlaziuk/ratnum
