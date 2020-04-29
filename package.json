@@ -4,13 +4,19 @@
   "description": "",
   "main": "cjs/index.js",
   "module": "es/index.js",
+  "browser": "es/index.js",
   "scripts": {
     "build": "tsc --project tsconfig.es.json && tsc --project tsconfig.cjs.json",
     "prepack": "tsc --project tsconfig.es.json && tsc --project tsconfig.cjs.json",
     "test": "jest"
   },
-  "author": "",
-  "license": "ISC",
+  "repository": {
+    "type": "git",
+    "url": "github:tlaziuk/ratnum"
+  },
+  "homepage": "https://github.com/tlaziuk/ratnum",
+  "author": "Tomek Łaziuk <tlaziuk+ratnum@gmail.com> (https://tlaziuk.com/)",
+  "license": "MIT",
   "jest": {
     "preset": "ts-jest/presets/js-with-ts",
     "testEnvironment": "node"
