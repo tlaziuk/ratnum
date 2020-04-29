@@ -1,5 +1,5 @@
 {
-  "name": "rational-number",
+  "name": "@tlaziuk/rational-number",
   "version": "1.0.0",
   "description": "",
   "main": "cjs/index.js",
