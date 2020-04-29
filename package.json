@@ -6,7 +6,7 @@
   "module": "es/index.js",
   "scripts": {
     "build": "tsc --project tsconfig.es.json && tsc --project tsconfig.cjs.json",
-    "prepublishOnly": "tsc --project tsconfig.es.json && tsc --project tsconfig.cjs.json",
+    "prepack": "tsc --project tsconfig.es.json && tsc --project tsconfig.cjs.json",
     "test": "jest"
   },
   "author": "",
