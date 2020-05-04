@@ -142,10 +142,12 @@ export default class RationalNumber implements RationalNumberLike<bigint> {
   constructor(value: ParsableValue) {
     const bag = getValueBag(this);
 
-    ({
-      denominator: bag.denominator,
-      numerator: bag.numerator,
-    } = parseValue(value))
+    const { numerator, denominator } = parseValue(value)
+
+    const gcd = greatestCommonDivisor(numerator, denominator)
+
+    bag.numerator = numerator / gcd
+    bag.denominator = denominator / gcd
   }
 
   public get numerator(): bigint {
@@ -179,18 +181,19 @@ export default class RationalNumber implements RationalNumberLike<bigint> {
     const denominator = aDenominator * bDenominator
     const numerator = (aNumerator * (denominator / aDenominator)) + (bNumerator * (denominator / bDenominator))
 
-    const gcd = greatestCommonDivisor(numerator, denominator)
-
     return new RationalNumber({
-      denominator: denominator / gcd,
-      numerator: numerator / gcd,
+      denominator,
+      numerator,
     })
   }
 
   public substract(value: ParsableValue): RationalNumber {
     const { numerator, denominator } = parseValue(value)
 
-    return this.add({ numerator: numerator * BigInt(-1), denominator })
+    return this.add({
+      numerator: numerator * BigInt(-1),
+      denominator,
+    })
   }
 
   public inverse(): RationalNumber {
@@ -209,11 +212,9 @@ export default class RationalNumber implements RationalNumberLike<bigint> {
     const denominator = aDenominator * bDenominator
     const numerator = aNumerator * bNumerator
 
-    const gcd = greatestCommonDivisor(numerator, denominator)
-
     return new RationalNumber({
-      denominator: denominator / gcd,
-      numerator: numerator / gcd,
+      denominator,
+      numerator,
     })
   }
 
@@ -238,5 +239,37 @@ export default class RationalNumber implements RationalNumberLike<bigint> {
         this.divide(modulator).int(),
       ),
     )
+  }
+
+  public equal(value: ParsableValue): boolean {
+    if (!(value instanceof RationalNumber)) {
+      value = new RationalNumber(value)
+    }
+
+    return this.numerator === value.numerator && this.denominator === value.denominator
+  }
+
+  public root(parsableValue: ParsableValue, precision = BigInt(16)): RationalNumber {
+    const value = parsableValue instanceof RationalNumber ? parsableValue : new RationalNumber(parsableValue)
+    const rationalOne = new RationalNumber(1)
+
+    if (value.equal(rationalOne)) {
+      return this
+    }
+
+    let iteration = BigInt(0)
+    let previous: RationalNumber
+    let current: RationalNumber = this // eslint-disable-line @typescript-eslint/no-this-alias
+
+
+    const multiper = new RationalNumber(1).divide(value)
+
+    do {
+      previous = current
+      current = multiper.multiply(previous.add(this.divide(previous)))
+      iteration ++
+    } while (iteration < precision && !previous.equal(current))
+
+    return current
   }
 }
