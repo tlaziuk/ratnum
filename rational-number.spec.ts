@@ -119,3 +119,13 @@ describe(RationalNumber, () => {
     expect(value.toFixed(10)).toEqual('3.1415926535')
   })
 })
+
+describe(`${RationalNumber.name}#JSON`, () => {
+  it('should be able to recreate from JSON', () => {
+    const value = new RationalNumber(Math.PI)
+    const recreatedValue = RationalNumber.fromJSON(JSON.parse(JSON.stringify(value)))
+
+    expect(value.numerator).toEqual(recreatedValue.numerator)
+    expect(value.denominator).toEqual(recreatedValue.denominator)
+  })
+})
