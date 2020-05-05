@@ -170,8 +170,22 @@ export default class RationalNumber implements RationalNumberLike<bigint> {
     return stringify(this, precision)
   }
 
-  public toJSON(): number {
-    return Number(stringify(this, 16))
+  /**
+   * re-creates `RationalNumber` instance from previously serialized value
+   */
+  public static fromJSON(value: string): RationalNumber {
+    const [numerator, denominator] = value.split('/')
+
+    return new this({ numerator, denominator })
+  }
+
+  /**
+   * serialize value to JSON, this method is meant to be used indirectly by `JSON.serialize`
+   */
+  public toJSON(): string {
+    const { numerator, denominator } = getValueBag(this)
+
+    return `${numerator}/${denominator}`
   }
 
   public add(value: ParsableValue): RationalNumber {
