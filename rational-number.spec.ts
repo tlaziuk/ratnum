@@ -106,24 +106,37 @@ describe(RationalNumber, () => {
 
   it.each<[any, any, number]>([
     [1, 1, 1],
-    [4, 2, 2],
-    [27, 3, 3],
-  ])('expect nthRoot(RationalNumber(%p), %p) to be %p', (base, root, result) => {
-    expect(Number(new RationalNumber(base).root(root))).toEqual(result)
+    [1, -1, 1],
+    [2, 2, 4],
+    [2, 3, 8],
+    [2, -1, 0.5],
+    [0.5, 2, 0.25],
+  ])('expect (RationalNumber(%p) ** %p to be %p', (base, exponent, result) => {
+    expect(Number(new RationalNumber(base).power(exponent))).toEqual(result)
   })
 
-  // it('expect to calculate first 10 fraction digits of π using Nilakantha series', () => {
-  //   let denominator = BigInt(2)
-  //   let value = new RationalNumber(3)
+  it.each<[any, any, number]>([
+    [1, 1, 1],
+    [2, 2, 1.414213562373095],
+    [4, 2, 2],
+    [8, 3, 2],
+    [27, 3, 3],
+  ])('expect nthRoot(RationalNumber(%p), %p) to be %p', (base, degree, result) => {
+    expect(Number(new RationalNumber(base).root(degree))).toEqual(result)
+  })
 
-  //   while (denominator < BigInt(10_000)) {
-  //     value = value.add([4, denominator * (denominator + BigInt(1)) * (denominator + BigInt(2))])
-  //     denominator += BigInt(2)
+  it('expect to calculate first 10 fraction digits of π using Nilakantha series', () => {
+    let denominator = BigInt(2)
+    let value = new RationalNumber(3)
 
-  //     value = value.substract([4, denominator * (denominator + BigInt(1)) * (denominator + BigInt(2))])
-  //     denominator += BigInt(2)
-  //   }
+    while (denominator < BigInt(10_000)) {
+      value = value.add([4, denominator * (denominator + BigInt(1)) * (denominator + BigInt(2))])
+      denominator += BigInt(2)
 
-  //   expect(value.toFixed(10)).toEqual('3.1415926535')
-  // })
+      value = value.substract([4, denominator * (denominator + BigInt(1)) * (denominator + BigInt(2))])
+      denominator += BigInt(2)
+    }
+
+    expect(value.toFixed(10)).toEqual('3.1415926535')
+  })
 })

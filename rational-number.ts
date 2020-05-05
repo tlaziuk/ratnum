@@ -249,11 +249,60 @@ export default class RationalNumber implements RationalNumberLike<bigint> {
     return this.numerator === value.numerator && this.denominator === value.denominator
   }
 
-  public root(parsableValue: ParsableValue, precision = BigInt(16)): RationalNumber {
-    const value = parsableValue instanceof RationalNumber ? parsableValue : new RationalNumber(parsableValue)
-    const rationalOne = new RationalNumber(1)
+  public abs(): RationalNumber {
+    if (this.numerator < BigInt(0)) {
+      return new RationalNumber({ numerator: -this.numerator, denominator: this.denominator })
+    }
 
-    if (value.equal(rationalOne)) {
+    return this
+  }
+
+  public power(exponent: ParsableValue, precision = BigInt(16)): RationalNumber {
+    const rationalExponent = exponent instanceof RationalNumber ? exponent : new RationalNumber(exponent)
+
+    if (rationalExponent.numerator === BigInt(0)) {
+      return new RationalNumber(1)
+    }
+
+    if (rationalExponent.numerator === rationalExponent.denominator) {
+      return this
+    }
+
+    if (rationalExponent.numerator < BigInt(0)) {
+      return this.inverse().power(rationalExponent.abs())
+    }
+
+    const numerator = this.numerator ** rationalExponent.numerator
+    const denominator = this.denominator ** rationalExponent.numerator
+
+    const result = new RationalNumber({ numerator, denominator })
+
+    if (rationalExponent.denominator !== BigInt(1)) {
+      return result.root(rationalExponent.denominator, precision)
+    }
+
+    return result
+  }
+
+  /**
+   * @see https://en.wikipedia.org/wiki/Nth_root_algorithm
+   */
+  public root(degree: string | number | bigint, precision = BigInt(16)): RationalNumber {
+    if (this.numerator < BigInt(0)) {
+      throw new RangeError('rooting not allowed on negative numbers')
+    }
+
+    degree = typeof degree === 'bigint' ? degree : BigInt(degree)
+
+    if (degree <= BigInt(0)) {
+      throw new RangeError('root degree has to be greater than 0')
+    }
+
+    if (this.numerator === BigInt(0)) {
+      return this
+    }
+
+    if (degree === BigInt(1)) {
       return this
     }
 
@@ -262,12 +311,13 @@ export default class RationalNumber implements RationalNumberLike<bigint> {
     let current: RationalNumber = this // eslint-disable-line @typescript-eslint/no-this-alias
 
 
-    const multiper = new RationalNumber(1).divide(value)
+    const multiper = new RationalNumber({ numerator: 1, denominator: degree })
+    const powerExponent = new RationalNumber(degree - BigInt(1))
 
     do {
       previous = current
-      current = multiper.multiply(previous.add(this.divide(previous)))
-      iteration ++
+      current = multiper.multiply(this.divide(previous.power(powerExponent)).substract(previous)).add(previous)
+      iteration++
     } while (iteration < precision && !previous.equal(current))
 
     return current
