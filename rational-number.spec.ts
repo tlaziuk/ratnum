@@ -111,14 +111,18 @@ describe(RationalNumber, () => {
     [2, 3, 8],
     [2, -1, 0.5],
     [0.5, 2, 0.25],
+    [4, 0.5, 2],
   ])('expect (RationalNumber(%p) ** %p to be %p', (base, exponent, result) => {
     expect(Number(new RationalNumber(base).power(exponent))).toEqual(result)
   })
 
   it.each<[any, any, number]>([
     [1, 1, 1],
+    [Math.PI, 1, Math.PI],
     [2, 2, 1.414213562373095],
     [4, 2, 2],
+    [625, 4, 5],
+    [16, 4, 2],
     [8, 3, 2],
     [27, 3, 3],
   ])('expect nthRoot(RationalNumber(%p), %p) to be %p', (base, degree, result) => {

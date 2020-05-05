@@ -190,6 +190,11 @@ export default class RationalNumber implements RationalNumberLike<bigint> {
 
   public add(value: ParsableValue): RationalNumber {
     const { denominator: aDenominator, numerator: aNumerator } = parseValue(value)
+
+    if (aNumerator === BigInt(0)) {
+      return this
+    }
+
     const { denominator: bDenominator, numerator: bNumerator } = getValueBag(this)
 
     const denominator = aDenominator * bDenominator
@@ -246,21 +251,13 @@ export default class RationalNumber implements RationalNumberLike<bigint> {
   }
 
   public mod(value: ParsableValue): RationalNumber {
-    const modulator = new RationalNumber(value)
+    const modulator = value instanceof RationalNumber ? value : new RationalNumber(value)
 
     return this.substract(
       modulator.multiply(
         this.divide(modulator).int(),
       ),
     )
-  }
-
-  public equal(value: ParsableValue): boolean {
-    if (!(value instanceof RationalNumber)) {
-      value = new RationalNumber(value)
-    }
-
-    return this.numerator === value.numerator && this.denominator === value.denominator
   }
 
   public abs(): RationalNumber {
@@ -324,15 +321,14 @@ export default class RationalNumber implements RationalNumberLike<bigint> {
     let previous: RationalNumber
     let current: RationalNumber = this // eslint-disable-line @typescript-eslint/no-this-alias
 
-
     const multiper = new RationalNumber({ numerator: 1, denominator: degree })
-    const powerExponent = new RationalNumber(degree - BigInt(1))
+    const degreeMinusOne = new RationalNumber(degree - BigInt(1))
 
     do {
       previous = current
-      current = multiper.multiply(this.divide(previous.power(powerExponent)).substract(previous)).add(previous)
+      current = multiper.multiply(previous.multiply(degreeMinusOne).add(this.divide(previous.power(degreeMinusOne))))
       iteration++
-    } while (iteration < precision && !previous.equal(current))
+    } while (iteration < precision && !(previous.numerator === current.numerator && previous.denominator === current.denominator))
 
     return current
   }
