@@ -319,7 +319,7 @@ export default class RationalNumber implements RationalNumberLike<bigint> {
 
     let iteration = BigInt(0)
     let previous: RationalNumber
-    let current: RationalNumber = this // eslint-disable-line @typescript-eslint/no-this-alias
+    let current: RationalNumber = degree > BigInt(2) ? this.root(2, BigInt(2)) : this
 
     const multiper = new RationalNumber({ numerator: 1, denominator: degree })
     const degreeMinusOne = new RationalNumber(degree - BigInt(1))
