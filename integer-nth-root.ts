@@ -7,7 +7,7 @@
 export default function integerNthRoot(radicand: bigint, degree: bigint): bigint {
   const one = BigInt(1)
   let previous: bigint
-  let current: bigint = one
+  let current: bigint = radicand / degree
 
   do {
     previous = current
