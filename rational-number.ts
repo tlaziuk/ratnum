@@ -159,6 +159,9 @@ export default class RationalNumber implements RationalNumberLike<bigint> {
     return getValueBag(this).denominator
   }
 
+  /**
+  * `Number()` overload
+  */
   public valueOf(): number {
     return Number(stringify(this, 16))
   }
