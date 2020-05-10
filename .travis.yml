@@ -8,6 +8,7 @@ script:
 deploy:
   provider: npm
   cleanup: false
+  skip_cleanup: true
   email: $NPM_EMAIL
   api_key: $NPM_API_KEY
   on:
