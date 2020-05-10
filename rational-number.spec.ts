@@ -112,7 +112,7 @@ describe(RationalNumber, () => {
     [2, -1, 0.5],
     [0.5, 2, 0.25],
     [4, 0.5, 2],
-  ])('expect (RationalNumber(%p) ** %p to be %p', (base, exponent, result) => {
+  ])('expect RationalNumber(%p) ** %p to be %p', (base, exponent, result) => {
     expect(Number(new RationalNumber(base).power(exponent))).toEqual(result)
   })
 
