@@ -1,4 +1,5 @@
 import greatestCommonDivisor from './gcd'
+import integerNthRoot from './integer-nth-root'
 
 export interface RationalNumberLike<T extends (number | string | bigint) = (number | string | bigint)> {
   readonly numerator: T;
@@ -34,7 +35,7 @@ function normalizeValue({ numerator, denominator }: RationalNumberLike<bigint>):
     throw new RangeError(`Division by zero`)
   }
 
-  if (denominator < 0) {
+  if (denominator < BigInt(0)) {
     numerator *= BigInt(-1)
     denominator *= BigInt(-1)
   }
@@ -142,10 +143,12 @@ export default class RationalNumber implements RationalNumberLike<bigint> {
   constructor(value: ParsableValue) {
     const bag = getValueBag(this);
 
-    ({
-      denominator: bag.denominator,
-      numerator: bag.numerator,
-    } = parseValue(value))
+    const { numerator, denominator } = parseValue(value)
+
+    const gcd = greatestCommonDivisor(numerator, denominator)
+
+    bag.numerator = numerator / gcd
+    bag.denominator = denominator / gcd
   }
 
   public get numerator(): bigint {
@@ -188,23 +191,29 @@ export default class RationalNumber implements RationalNumberLike<bigint> {
 
   public add(value: ParsableValue): RationalNumber {
     const { denominator: aDenominator, numerator: aNumerator } = parseValue(value)
+
+    if (aNumerator === BigInt(0)) {
+      return this
+    }
+
     const { denominator: bDenominator, numerator: bNumerator } = getValueBag(this)
 
     const denominator = aDenominator * bDenominator
     const numerator = (aNumerator * (denominator / aDenominator)) + (bNumerator * (denominator / bDenominator))
 
-    const gcd = greatestCommonDivisor(numerator, denominator)
-
     return new RationalNumber({
-      denominator: denominator / gcd,
-      numerator: numerator / gcd,
+      denominator,
+      numerator,
     })
   }
 
   public substract(value: ParsableValue): RationalNumber {
     const { numerator, denominator } = parseValue(value)
 
-    return this.add({ numerator: numerator * BigInt(-1), denominator })
+    return this.add({
+      numerator: numerator * BigInt(-1),
+      denominator,
+    })
   }
 
   public inverse(): RationalNumber {
@@ -223,11 +232,9 @@ export default class RationalNumber implements RationalNumberLike<bigint> {
     const denominator = aDenominator * bDenominator
     const numerator = aNumerator * bNumerator
 
-    const gcd = greatestCommonDivisor(numerator, denominator)
-
     return new RationalNumber({
-      denominator: denominator / gcd,
-      numerator: numerator / gcd,
+      denominator,
+      numerator,
     })
   }
 
@@ -241,16 +248,128 @@ export default class RationalNumber implements RationalNumberLike<bigint> {
   }
 
   public int(): RationalNumber {
-    return new RationalNumber(this.numerator / this.denominator)
+    const {
+      numerator,
+      denominator,
+    } = getValueBag(this)
+
+    return new RationalNumber(numerator / denominator)
   }
 
   public mod(value: ParsableValue): RationalNumber {
-    const modulator = new RationalNumber(value)
+    const modulator = value instanceof RationalNumber ? value : new RationalNumber(value)
 
     return this.substract(
       modulator.multiply(
         this.divide(modulator).int(),
       ),
     )
+  }
+
+  public abs(): RationalNumber {
+    const { numerator, denominator } = getValueBag(this)
+
+    if (numerator < BigInt(0)) {
+      return new RationalNumber({ numerator: -numerator, denominator })
+    }
+
+    return this
+  }
+
+  public power(exponent: ParsableValue, precision = BigInt(16)): RationalNumber {
+    const rationalExponent = parseValue(exponent)
+
+    // x ** 0
+    if (rationalExponent.numerator === BigInt(0)) {
+      return new RationalNumber(1)
+    }
+
+    // x ** 1
+    if (rationalExponent.numerator === rationalExponent.denominator) {
+      return this
+    }
+
+    // x ** n, where n < 0
+    if (rationalExponent.numerator < BigInt(0)) {
+      return this.inverse().power({
+        numerator: -rationalExponent.numerator,
+        denominator: rationalExponent.denominator,
+      })
+    }
+
+    const numerator = this.numerator ** rationalExponent.numerator
+    const denominator = this.denominator ** rationalExponent.numerator
+
+    const result = new RationalNumber({ numerator, denominator })
+
+    // exponent is not an integer
+    if (rationalExponent.denominator !== BigInt(1)) {
+      return result.root(rationalExponent.denominator, precision)
+    }
+
+    return result
+  }
+
+  /**
+   * @see https://en.wikipedia.org/wiki/Nth_root_algorithm
+   */
+  public root(degree: string | number | bigint, precision = BigInt(16)): RationalNumber {
+    // root(x, n), where x < 0
+    if (this.numerator < BigInt(0)) {
+      throw new RangeError('rooting not allowed on negative numbers')
+    }
+
+    degree = typeof degree === 'bigint' ? degree : BigInt(degree)
+
+    // root(x, n), where n <= 0
+    if (degree <= BigInt(0)) {
+      throw new RangeError('root degree has to be greater than 0')
+    }
+
+    // root(0, n)
+    if (this.numerator === BigInt(0)) {
+      return this
+    }
+
+    // root(x, 1)
+    if (degree === BigInt(1)) {
+      return this
+    }
+
+    let current: RationalNumber = this.divide(degree)
+
+    /**
+     * it's a shortcut for calculating roots of integers,
+     * in some cases (eg. `root(9, 3)`) the standard approach may never be finished nor return the correct result,
+     * because the Newton-Rhapson method uses calculus which means in each iteration it is only getting closer to the actual result which may be never reached,
+     * in the example above (`root(9, 3)`) obviously equals `3`,
+     * but when using rational numbers instead of integers the result is not achieved in a rational amount of iterations
+     *
+     * when `denominator === 1` the number is an integer
+     */
+    if (this.denominator === BigInt(1)) {
+      current = new RationalNumber(integerNthRoot(this.numerator, degree))
+
+      // validation
+      if (current.numerator ** degree === this.numerator) {
+        return current
+      }
+    } else {
+      current = this.divide(degree)
+    }
+
+    let iteration = BigInt(0)
+    let previous: RationalNumber
+
+    const multiper = new RationalNumber({ numerator: 1, denominator: degree })
+    const degreeMinusOne = new RationalNumber(degree - BigInt(1))
+
+    do {
+      previous = current
+      current = multiper.multiply(previous.multiply(degreeMinusOne).add(this.divide(previous.power(degreeMinusOne))))
+      iteration++
+    } while (iteration < precision && !(previous.numerator === current.numerator && previous.denominator === current.denominator))
+
+    return current
   }
 }

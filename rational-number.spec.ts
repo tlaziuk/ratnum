@@ -104,6 +104,33 @@ describe(RationalNumber, () => {
     expect(Number(new RationalNumber(value).int())).toEqual(result)
   })
 
+  it.each<[any, any, number]>([
+    [1, 1, 1],
+    [1, -1, 1],
+    [2, 2, 4],
+    [2, 3, 8],
+    [2, -1, 0.5],
+    [0.5, 2, 0.25],
+    [4, 0.5, 2],
+  ])('expect RationalNumber(%p) ** %p to be %p', (base, exponent, result) => {
+    expect(Number(new RationalNumber(base).power(exponent))).toEqual(result)
+  })
+
+  it.each<[any, any, number]>([
+    [1, 1, 1],
+    [Math.PI, 1, Math.PI],
+    [2, 2, 1.414213562373095],
+    [4, 2, 2],
+    [9, 2, 3],
+    [[1, 9], 2, 0.3333333333333333],
+    [625, 4, 5],
+    [16, 4, 2],
+    [8, 3, 2],
+    [27, 3, 3],
+  ])('expect nthRoot(RationalNumber(%p), %p) to be %p', (base, degree, result) => {
+    expect(Number(new RationalNumber(base).root(degree))).toEqual(result)
+  })
+
   it('expect to calculate first 10 fraction digits of π using Nilakantha series', () => {
     let denominator = BigInt(2)
     let value = new RationalNumber(3)
