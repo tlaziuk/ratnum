@@ -1,5 +1,6 @@
 /**
  * implementation assumes all passed values are valid
+ * @see https://en.wikipedia.org/wiki/Nth_root_algorithm
  * @param radicand base for rooting, > 0
  * @param degree root degree, > 1
  */

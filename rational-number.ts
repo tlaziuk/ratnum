@@ -312,7 +312,6 @@ export default class RationalNumber implements RationalNumberLike<bigint> {
 
   /**
    * @see https://en.wikipedia.org/wiki/Nth_root_algorithm
-   * @see https://en.wikipedia.org/wiki/Shifting_nth_root_algorithm
    */
   public root(degree: string | number | bigint, precision = BigInt(16)): RationalNumber {
     // root(x, n), where x < 0
@@ -339,8 +338,16 @@ export default class RationalNumber implements RationalNumberLike<bigint> {
 
     let current: RationalNumber = this.divide(degree)
 
-    // `this` is integer
-    if (this.denominator === BigInt(0)) {
+    /**
+     * it's a shortcut for calculating roots of integers,
+     * in some cases (eg. `root(9, 3)`) the standard approach may never be finished nor return the correct result,
+     * because the Newton-Rhapson method uses calculus which means in each iteration it is only getting closer to the actual result which may be never reached,
+     * in the example above (`root(9, 3)`) obviously equals `3`,
+     * but when using rational numbers instead of integers the result is not achieved in a rational amount of iterations
+     *
+     * when `denominator === 1` the number is an integer
+     */
+    if (this.denominator === BigInt(1)) {
       current = new RationalNumber(integerNthRoot(this.numerator, degree))
 
       // validation
