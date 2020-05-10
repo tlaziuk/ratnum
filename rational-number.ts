@@ -1,4 +1,5 @@
 import greatestCommonDivisor from './gcd'
+import integerNthRoot from './integer-nth-root'
 
 export interface RationalNumberLike<T extends (number | string | bigint) = (number | string | bigint)> {
   readonly numerator: T;
@@ -336,9 +337,22 @@ export default class RationalNumber implements RationalNumberLike<bigint> {
       return this
     }
 
+    let current: RationalNumber = this.divide(degree)
+
+    // `this` is integer
+    if (this.denominator === BigInt(0)) {
+      current = new RationalNumber(integerNthRoot(this.numerator, degree))
+
+      // validation
+      if (current.numerator ** degree === this.numerator) {
+        return current
+      }
+    } else {
+      current = this.divide(degree)
+    }
+
     let iteration = BigInt(0)
     let previous: RationalNumber
-    let current: RationalNumber = this.divide(degree)
 
     const multiper = new RationalNumber({ numerator: 1, denominator: degree })
     const degreeMinusOne = new RationalNumber(degree - BigInt(1))
