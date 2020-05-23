@@ -30,21 +30,7 @@ function isRationalNumberLike(value: unknown): value is RationalNumberLike {
 
 type ParsableValue = number | string | bigint | RationalNumberLike | [number | string | bigint, number | string | bigint]
 
-function normalizeValue({ numerator, denominator }: RationalNumberLike<bigint>): RationalNumberLike<bigint> {
-  if (denominator === BigInt(0)) {
-    throw new RangeError(`Division by zero`)
-  }
-
-  if (denominator < BigInt(0)) {
-    numerator *= BigInt(-1)
-    denominator *= BigInt(-1)
-  }
-
-  return {
-    numerator,
-    denominator,
-  }
-}
+type Precision = number | bigint | string | null
 
 function parseValue(value: ParsableValue): RationalNumberLike<bigint> {
   // eslint-disable-next-line @typescript-eslint/no-use-before-define
@@ -80,16 +66,22 @@ function parseValue(value: ParsableValue): RationalNumberLike<bigint> {
     numerator = ((BigInt(decimal) * denominator) + BigInt(fraction)) * BigInt(isNegative ? -1 : 1)
   }
 
-  return normalizeValue({
+  if (denominator === BigInt(0)) {
+    throw new RangeError(`Division by zero: ${numerator}/${denominator}`)
+  }
+
+  if (denominator < BigInt(0)) {
+    numerator *= BigInt(-1)
+    denominator *= BigInt(-1)
+  }
+
+  return {
     numerator,
     denominator,
-  })
+  }
 }
 
-function stringify(value: RationalNumberLike<bigint>, precision: number): string {
-  value = normalizeValue(value)
-  let numerator = value.numerator
-  const denominator = value.denominator
+function stringify({ numerator, denominator }: RationalNumberLike<bigint>, precision: number, fixed = false): string {
   const isNegative = numerator < BigInt(0)
 
   if (isNegative) {
@@ -114,6 +106,10 @@ function stringify(value: RationalNumberLike<bigint>, precision: number): string
     fraction += tmp.toString()
   }
 
+  if (fixed && fraction.length !== precision) {
+    fraction = fraction.padEnd(precision, '0')
+  }
+
   return `${isNegative ? '-' : ''}${decimal}${fraction.length > 0 ? `.${fraction}` : ''}`
 }
 
@@ -133,20 +129,40 @@ function getValueBag(key: RationalNumber): { numerator: bigint; denominator: big
 }
 
 /**
- * ```
- * NUMERATOR
- * ---
- * DENOMINATOR
- * ```
+ * an arbitrary precision number, where you can distinguish a numerator and a denominator: `numerator/denominator`
  */
 export default class RationalNumber implements RationalNumberLike<bigint> {
-  constructor(value: ParsableValue) {
-    const bag = getValueBag(this);
+  readonly #precision: bigint | null
 
-    const { numerator, denominator } = parseValue(value)
+  constructor(value: ParsableValue, precision: Precision = BigInt(Number.MAX_SAFE_INTEGER)) {
+    let numerator: bigint
+    let denominator: bigint
+
+    if (precision === null || (typeof precision === 'number' && (Number.isNaN(precision) || precision === Infinity))) {
+      ({ numerator, denominator } = parseValue(value))
+      this.#precision = null
+    } else {
+      if (typeof precision !== 'bigint') {
+        precision = BigInt(precision)
+      }
+
+      if (precision < BigInt(1)) {
+        throw new Error('precision can not be smaller than 1')
+      }
+
+      ({ numerator, denominator } = parseValue(value))
+
+      if (denominator > precision) {
+        numerator = (numerator * precision) / denominator
+        denominator = precision
+      }
+
+      this.#precision = precision
+    }
 
     const gcd = greatestCommonDivisor(numerator, denominator)
 
+    const bag = getValueBag(this);
     bag.numerator = numerator / gcd
     bag.denominator = denominator / gcd
   }
@@ -159,16 +175,27 @@ export default class RationalNumber implements RationalNumberLike<bigint> {
     return getValueBag(this).denominator
   }
 
+  /**
+  * `Number()` overload
+  */
   public valueOf(): number {
     return Number(stringify(this, 16))
   }
 
+  /**
+  * `String()` overload
+  */
   public toString(): string {
     return stringify(this, 16)
   }
 
+  /**
+   * `Number.toFixed()` equivalent
+   * @param precision fixed-point precision
+   * @return a string representing a number in fixed-point notation
+   */
   public toFixed(precision: number): string {
-    return stringify(this, precision)
+    return stringify(this, precision, true)
   }
 
   /**
@@ -177,11 +204,13 @@ export default class RationalNumber implements RationalNumberLike<bigint> {
   public static fromJSON(value: string): RationalNumber {
     const [numerator, denominator] = value.split('/')
 
-    return new this({ numerator, denominator })
+    return new this({ numerator, denominator }, BigInt(denominator))
   }
 
   /**
-   * serialize value to JSON, this method is meant to be used indirectly by `JSON.serialize`
+   * serialize value to JSON string by adding a `/` separator between numerator and denominator
+   *
+   * this method is meant to be used indirectly by `JSON.serialize`
    */
   public toJSON(): string {
     const { numerator, denominator } = getValueBag(this)
@@ -189,7 +218,7 @@ export default class RationalNumber implements RationalNumberLike<bigint> {
     return `${numerator}/${denominator}`
   }
 
-  public add(value: ParsableValue): RationalNumber {
+  public add(value: ParsableValue, precision: Precision = this.#precision): RationalNumber {
     const { denominator: aDenominator, numerator: aNumerator } = parseValue(value)
 
     if (aNumerator === BigInt(0)) {
@@ -201,50 +230,73 @@ export default class RationalNumber implements RationalNumberLike<bigint> {
     const denominator = aDenominator * bDenominator
     const numerator = (aNumerator * (denominator / aDenominator)) + (bNumerator * (denominator / bDenominator))
 
-    return new RationalNumber({
-      denominator,
-      numerator,
-    })
+    return new RationalNumber(
+      {
+        denominator,
+        numerator,
+      },
+      precision,
+    )
   }
 
-  public substract(value: ParsableValue): RationalNumber {
+  public substract(value: ParsableValue, precision: Precision = this.#precision): RationalNumber {
     const { numerator, denominator } = parseValue(value)
 
-    return this.add({
-      numerator: numerator * BigInt(-1),
-      denominator,
-    })
+    return this.add(
+      {
+        numerator: numerator * BigInt(-1),
+        denominator,
+      },
+      precision,
+    )
   }
 
   public inverse(): RationalNumber {
     const { numerator, denominator } = getValueBag(this)
 
-    return new RationalNumber({
-      numerator: denominator,
-      denominator: numerator,
-    })
+    if (numerator === BigInt(0) || numerator === denominator) {
+      return this
+    }
+
+    return new RationalNumber(
+      {
+        numerator: denominator,
+        denominator: numerator,
+      },
+      null,
+    )
   }
 
-  public multiply(value: ParsableValue): RationalNumber {
+  public multiply(value: ParsableValue, precision: Precision = this.#precision): RationalNumber {
     const { denominator: aDenominator, numerator: aNumerator } = parseValue(value)
     const { denominator: bDenominator, numerator: bNumerator } = getValueBag(this)
 
     const denominator = aDenominator * bDenominator
     const numerator = aNumerator * bNumerator
 
-    return new RationalNumber({
-      denominator,
-      numerator,
-    })
+    return new RationalNumber(
+      {
+        denominator,
+        numerator,
+      },
+      precision,
+    )
   }
 
-  public divide(value: ParsableValue): RationalNumber {
+  public divide(value: ParsableValue, precision: Precision = this.#precision): RationalNumber {
     const { numerator, denominator } = parseValue(value)
 
-    return this.multiply({
-      numerator: denominator,
-      denominator: numerator,
-    })
+    if (numerator === BigInt(0)) {
+      throw new RangeError(`Can not divide ${this} by 0`)
+    }
+
+    return this.multiply(
+      {
+        numerator: denominator,
+        denominator: numerator,
+      },
+      precision,
+    )
   }
 
   public int(): RationalNumber {
@@ -256,13 +308,18 @@ export default class RationalNumber implements RationalNumberLike<bigint> {
     return new RationalNumber(numerator / denominator)
   }
 
-  public mod(value: ParsableValue): RationalNumber {
+  public mod(value: ParsableValue, precision: Precision = this.#precision): RationalNumber {
     const modulator = value instanceof RationalNumber ? value : new RationalNumber(value)
 
     return this.substract(
       modulator.multiply(
-        this.divide(modulator).int(),
+        this.divide(
+          modulator,
+          precision,
+        ).int(),
+        precision,
       ),
+      precision,
     )
   }
 
@@ -270,13 +327,16 @@ export default class RationalNumber implements RationalNumberLike<bigint> {
     const { numerator, denominator } = getValueBag(this)
 
     if (numerator < BigInt(0)) {
-      return new RationalNumber({ numerator: -numerator, denominator })
+      return new RationalNumber({ numerator: -numerator, denominator }, this.#precision)
     }
 
     return this
   }
 
-  public power(exponent: ParsableValue, precision = BigInt(16)): RationalNumber {
+  /**
+   * raise this value to given exponent
+   */
+  public power(exponent: ParsableValue, operationPrecision = BigInt(16), precision: Precision = this.#precision): RationalNumber {
     const rationalExponent = parseValue(exponent)
 
     // x ** 0
@@ -291,20 +351,24 @@ export default class RationalNumber implements RationalNumberLike<bigint> {
 
     // x ** n, where n < 0
     if (rationalExponent.numerator < BigInt(0)) {
-      return this.inverse().power({
-        numerator: -rationalExponent.numerator,
-        denominator: rationalExponent.denominator,
-      })
+      return this.inverse().power(
+        {
+          numerator: -rationalExponent.numerator,
+          denominator: rationalExponent.denominator,
+        },
+        operationPrecision,
+        precision,
+      )
     }
 
     const numerator = this.numerator ** rationalExponent.numerator
     const denominator = this.denominator ** rationalExponent.numerator
 
-    const result = new RationalNumber({ numerator, denominator })
+    const result = new RationalNumber({ numerator, denominator }, precision)
 
     // exponent is not an integer
     if (rationalExponent.denominator !== BigInt(1)) {
-      return result.root(rationalExponent.denominator, precision)
+      return result.root(rationalExponent.denominator, operationPrecision)
     }
 
     return result
@@ -313,30 +377,55 @@ export default class RationalNumber implements RationalNumberLike<bigint> {
   /**
    * @see https://en.wikipedia.org/wiki/Nth_root_algorithm
    */
-  public root(degree: string | number | bigint, precision = BigInt(16)): RationalNumber {
-    // root(x, n), where x < 0
+  public root(degree: ParsableValue, operationPrecision = BigInt(16), precision: Precision = this.#precision): RationalNumber {
+    // root(< 0, n)
     if (this.numerator < BigInt(0)) {
-      throw new RangeError('rooting not allowed on negative numbers')
+      throw new RangeError('rooting not allowed on a negative radicand')
     }
 
-    degree = typeof degree === 'bigint' ? degree : BigInt(degree)
-
-    // root(x, n), where n <= 0
-    if (degree <= BigInt(0)) {
-      throw new RangeError('root degree has to be greater than 0')
-    }
-
+    // root(1, n)
     // root(0, n)
-    if (this.numerator === BigInt(0)) {
+    if (this.numerator === this.denominator || this.numerator === BigInt(0)) {
       return this
+    }
+
+    const rationalDegree = parseValue(degree)
+
+    // root(x, < 0)
+    if (rationalDegree.numerator < BigInt(0)) {
+      return this.inverse().root(
+        {
+          numerator: -rationalDegree.numerator,
+          denominator: rationalDegree.denominator,
+        },
+        operationPrecision,
+        precision,
+      )
+    }
+
+    // root(x, 0)
+    if (rationalDegree.numerator === BigInt(0)) {
+      throw new RangeError('root degree can not be equal to 0')
+    }
+
+    // root(x, 0 < n < 1)
+    if (rationalDegree.numerator / rationalDegree.denominator === BigInt(0)) {
+      return this.power(
+        {
+          numerator: rationalDegree.denominator,
+          denominator: rationalDegree.numerator,
+        },
+        operationPrecision,
+        precision,
+      )
     }
 
     // root(x, 1)
-    if (degree === BigInt(1)) {
+    if (rationalDegree.numerator === rationalDegree.denominator) {
       return this
     }
 
-    let current: RationalNumber = this.divide(degree)
+    let current: RationalNumber
 
     /**
      * it's a shortcut for calculating roots of integers,
@@ -347,28 +436,61 @@ export default class RationalNumber implements RationalNumberLike<bigint> {
      *
      * when `denominator === 1` the number is an integer
      */
-    if (this.denominator === BigInt(1)) {
-      current = new RationalNumber(integerNthRoot(this.numerator, degree))
+    if (this.denominator === BigInt(1) && (rationalDegree.numerator % rationalDegree.denominator === BigInt(0))) {
+      const degreeInt = rationalDegree.numerator / rationalDegree.denominator
+
+      current = new RationalNumber(integerNthRoot(this.numerator, degreeInt), precision)
 
       // validation
-      if (current.numerator ** degree === this.numerator) {
+      if (current.numerator ** degreeInt === this.numerator) {
         return current
       }
     } else {
-      current = this.divide(degree)
+      current = new RationalNumber(1, precision)
     }
 
     let iteration = BigInt(0)
-    let previous: RationalNumber
+    let previous: RationalNumber = current
 
-    const multiper = new RationalNumber({ numerator: 1, denominator: degree })
-    const degreeMinusOne = new RationalNumber(degree - BigInt(1))
+    const multiper = new RationalNumber(
+      {
+        numerator: rationalDegree.denominator,
+        denominator: rationalDegree.numerator,
+      },
+      precision,
+    )
+    const degreeMinusOne = new RationalNumber(
+      {
+        numerator: rationalDegree.numerator - rationalDegree.denominator,
+        denominator: rationalDegree.denominator,
+      },
+      precision,
+    )
 
     do {
       previous = current
-      current = multiper.multiply(previous.multiply(degreeMinusOne).add(this.divide(previous.power(degreeMinusOne))))
+      current = multiper
+        .multiply(
+          previous
+            .multiply(
+              degreeMinusOne,
+              operationPrecision,
+            )
+            .add(
+              this
+                .divide(
+                  previous
+                    .power(
+                      degreeMinusOne,
+                      operationPrecision,
+                    ),
+                  operationPrecision,
+                )
+            ),
+          precision,
+        )
       iteration++
-    } while (iteration < precision && !(previous.numerator === current.numerator && previous.denominator === current.denominator))
+    } while (iteration < operationPrecision && !(previous.numerator === current.numerator && previous.denominator === current.denominator))
 
     return current
   }
